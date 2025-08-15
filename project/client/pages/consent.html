@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consent • MathQuest</title><link rel="stylesheet" href="../assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<main class="container"><div class="card"><h2 class="h2">Age & Consent</h2>
+<div class="row"><input id="by" class="input" placeholder="Birth year (e.g., 2015)"><button class="btn" id="save">Save</button></div>
+<div class="row"><input id="email" class="input" placeholder="Parent email"><button class="btn a" id="req">Request Token</button></div>
+<div class="row"><input id="tok" class="input" placeholder="Enter token"><button class="btn" id="verify">Verify</button></div>
+<p class="small">Status: <strong id="st">Unknown</strong></p>
+</div></main>
+<script type="module">
+ import {api} from '../assets/js/runtime.js'; const U=localStorage.getItem('mq.user')||'admin';
+ async function refresh(){const r=await api('/consent/status?username='+U); document.getElementById('st').textContent=(r.hasConsent?'Consent on, ':'No consent, ')+(r.age? r.age+'y':'unknown age');}
+ document.getElementById('save').onclick=async()=>{const y=parseInt(document.getElementById('by').value,10); if(!y)return; await api('/consent/age',{method:'POST',body:JSON.stringify({username:U,birthYear:y})}); refresh();};
+ document.getElementById('req').onclick=async()=>{const e=document.getElementById('email').value.trim(); if(!e)return; const r=await api('/consent/request',{method:'POST',body:JSON.stringify({username:U,parentEmail:e})}); alert('Token (demo): '+r.token);};
+ document.getElementById('verify').onclick=async()=>{const t=document.getElementById('tok').value.trim(); if(!t)return; await api('/consent/verify',{method:'POST',body:JSON.stringify({username:U,token:t})}); refresh();};
+ refresh();
+</script></body></html>

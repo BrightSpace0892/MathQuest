@@ -1,0 +1,210 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickfire • MathQuest</title><link rel="stylesheet" href="../../assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<main class="container card"><h2 class="h2">Quickfire ⚡</h2><div id="game"></div><div class="row"><button class="btn" id="start">Normal</button><button class="btn a" id="start-daily">Daily 🔥</button></div></main>
+<script type="module">
+  import {api} from '../../assets/js/runtime.js';
+  const area=document.getElementById('game');
+  document.getElementById('start').onclick=()=>start(false); document.getElementById('start-daily').onclick=()=>start(true);
+  async function getHint(kind,a,b){ try{ const r=await api('/coach/hint',{method:'POST', body: JSON.stringify({kind,a,b})}); return r.hint; }catch(e){ return 'Estimate first; adjust by ones/tens.'; } }
+  /**
+   * Generate a new arithmetic or algebraic question based on grade.
+   * Returns an object {q: string, a: number, kind: string, x?: number, y?: number}.
+   * K/1: addition/subtraction within 10
+   * 2/3: addition/subtraction within 100 and single-digit × ÷
+   * 4/5: multi‑digit operations and simple decimals
+   * 6/7/8: mix of fractions, integers and simple equations
+   */
+  function generateQuestion(grade){
+    // Normalize grade: treat "K" or 0 as 0, otherwise parse int
+    const gNum = isNaN(Number(grade)) ? 0 : Number(grade);
+    // Helper to random int in [min,max]
+    const randInt = (min,max)=> Math.floor(Math.random()*(max-min+1))+min;
+    // Addition/Subtraction within 10 (K–1)
+    if(gNum <= 1){
+      const x = randInt(0,10);
+      const y = randInt(0,10);
+      const add = Math.random()<0.5;
+      return {
+        q: `${x} ${add?'+':'−'} ${y} = ?`,
+        a: add? x+y : x-y,
+        kind: add? 'add':'sub', x, y
+      };
+    }
+    // Grades 2–3: addition/subtraction within 100; 1‑digit multiplication/division
+    if(gNum <= 3){
+      const op = ['add','sub','mul','div'][randInt(0,3)];
+      if(op==='add' || op==='sub'){
+        const x = randInt(10,100);
+        const y = randInt(10,100);
+        return { q: `${x} ${op==='add'?'+':'−'} ${y} = ?`, a: op==='add'? x+y : x-y, kind: op, x, y };
+      }
+      if(op==='mul'){
+        const x = randInt(2,9);
+        const y = randInt(2,9);
+        return { q: `${x} × ${y} = ?`, a: x*y, kind:'mul', x, y };
+      }
+      // division: ensure whole number result
+      const divisor = randInt(2,9);
+      const quotient = randInt(2,9);
+      const dividend = divisor*quotient;
+      return { q: `${dividend} ÷ ${divisor} = ?`, a: quotient, kind:'div', x:dividend, y:divisor };
+    }
+    // Grades 4–5: multi‑digit operations; include simple decimals
+    if(gNum <= 5){
+      const op = ['add','sub','mul','dec'][randInt(0,3)];
+      if(op==='add' || op==='sub'){
+        const x = randInt(100,999);
+        const y = randInt(100,999);
+        return { q: `${x} ${op==='add'?'+':'−'} ${y} = ?`, a: op==='add'? x+y : x-y, kind: op, x, y };
+      }
+      if(op==='mul'){
+        const x = randInt(10,99);
+        const y = randInt(2,9);
+        return { q: `${x} × ${y} = ?`, a: x*y, kind:'mul', x, y };
+      }
+      // decimals: add or subtract two decimals with one decimal place
+      const dx = Math.round((randInt(10,99)/10)*10)/10;
+      const dy = Math.round((randInt(10,99)/10)*10)/10;
+      const add = Math.random()<0.5;
+      const ans = add ? (dx+dy) : (dx-dy);
+      return { q: `${dx.toFixed(1)} ${add?'+':'−'} ${dy.toFixed(1)} = ?`, a: Number(ans.toFixed(1)), kind: add?'add':'sub', x:dx, y:dy };
+    }
+    // Grades 6+: fractions, integers, simple equations
+    {
+      const op = ['fraction','integer','equation'][randInt(0,2)];
+      if(op==='fraction'){
+        // Add two simple fractions (denominators 2–8)
+        const d1 = randInt(2,8);
+        const d2 = randInt(2,8);
+        const n1 = randInt(1,d1-1);
+        const n2 = randInt(1,d2-1);
+        // common denominator
+        const cd = d1*d2;
+        const sumNum = n1*d2 + n2*d1;
+        // reduce fraction if possible
+        function gcd(a,b){return b?gcd(b,a%b):a;}
+        const g = gcd(sumNum, cd);
+        const rn = sumNum/g;
+        const rd = cd/g;
+        const q = `${n1}/${d1} + ${n2}/${d2} = ?`;
+        return { q, a: rn/rd, kind:'add', x:n1/d1, y:n2/d2 };
+      }
+      if(op==='integer'){
+        // integer addition/subtraction with negatives
+        const x = randInt(-20,20);
+        const y = randInt(-20,20);
+        const add = Math.random()<0.5;
+        return { q: `${x} ${add?'+':'−'} ${y} = ?`, a: add? x+y : x-y, kind: add?'add':'sub', x, y };
+      }
+      // simple equation: x + a = b or a − x = b
+      const a = randInt(1,20);
+      const b = randInt(1,40);
+      const form = Math.random()<0.5 ? 'x+a' : 'a-x';
+      if(form==='x+a'){
+        // x + a = b → x = b - a
+        const eq = `x + ${a} = ${b}`;
+        return { q: eq, a: b - a, kind:'eq', x:a, y:b };
+      } else {
+        // a − x = b → x = a - b
+        const eq = `${a} − x = ${b}`;
+        return { q: eq, a: a - b, kind:'eq', x:a, y:b };
+      }
+    }
+  }
+
+  function start(d){
+    let score = 0;
+    const total = d ? 60 : 30;
+    let remaining = total;
+    let current = null;
+    // Ask for grade if not saved
+    let grade = localStorage.getItem('mq.grade');
+    if(!grade){
+      grade = prompt('Enter grade (K=0, 1..8):') || '0';
+      localStorage.setItem('mq.grade', grade);
+    }
+    // Render UI with timer ring and scoreboard
+    area.innerHTML =
+      '<div class="row" style="justify-content:space-between;align-items:center">'
+      + '<div id="q"></div>'
+      + '<div id="sc" class="score">0</div>'
+      + '<div class="timer-ring"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="16"></circle><circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100" stroke-dashoffset="0"></circle></svg><div id="ti" class="small"></div></div>'
+      + '</div>'
+      + '<div class="row" style="margin-top:12px"><input id="ans" class="input" placeholder="Answer"><button class="btn" id="ok">OK</button></div>'
+      + '<div id="hint" class="small" style="margin-top:8px"></div>';
+    const qEl = area.querySelector('#q');
+    const scEl = area.querySelector('#sc');
+    const tiEl = area.querySelector('#ti');
+    const ans = area.querySelector('#ans');
+    const hintEl = area.querySelector('#hint');
+    const progressCircle = area.querySelector('.progress');
+    // Provide inputmode numeric only when appropriate
+    function updateInputMode(kind){
+      if(kind==='add'||kind==='sub'||kind==='mul'||kind==='div'||kind==='integer'||kind==='eq'){
+        ans.setAttribute('inputmode','numeric');
+      } else {
+        ans.removeAttribute('inputmode');
+      }
+    }
+    function newQ(){
+      current = generateQuestion(grade);
+      qEl.dataset.kind = current.kind;
+      qEl.dataset.x = current.x;
+      qEl.dataset.y = current.y;
+      qEl.textContent = current.q;
+      updateInputMode(current.kind);
+    }
+    newQ();
+    function ok(){
+      let v;
+      // Attempt to parse numeric input, else evaluate fraction/decimal
+      const raw = ans.value.trim();
+      if(raw.includes('/') && current.kind==='add'){
+        // parse fraction answer as a number; supports format a/b
+        const parts = raw.split('/');
+        const n = parseFloat(parts[0]);
+        const d = parseFloat(parts[1]||'1');
+        v = n/d;
+      } else {
+        v = parseFloat(raw);
+      }
+      if(!isNaN(v) && Math.abs(v - current.a) < 0.001){
+        // correct answer
+        score += 10;
+        scEl.textContent = String(score);
+        scEl.classList.add('score-pulse');
+        setTimeout(()=> scEl.classList.remove('score-pulse'), 300);
+        hintEl.textContent = '';
+        newQ();
+      } else {
+        getHint(qEl.dataset.kind, Number(qEl.dataset.x), Number(qEl.dataset.y)).then(h => {
+          hintEl.textContent = '💡 '+h;
+        });
+      }
+      ans.value = '';
+    }
+    area.querySelector('#ok').onclick = ok;
+    ans.addEventListener('keyup', e => { if(e.key === 'Enter') ok(); });
+    // Initialise timer ring
+    function updateRing(){
+      const ratio = remaining / total;
+      const offset = 100 - ratio * 100;
+      progressCircle.style.strokeDashoffset = offset;
+      tiEl.textContent = remaining + 's';
+    }
+    updateRing();
+    const timer = setInterval(() => {
+      remaining--;
+      updateRing();
+      if(remaining <= 0){
+        clearInterval(timer);
+        (async() => {
+          try {
+            await api('/progress/result', {method:'POST', body: JSON.stringify({username: localStorage.getItem('mq.user')||'admin', gameId:'quickfire', score: score})});
+          } catch {}
+        })();
+        area.innerHTML = '<p><strong>Done!</strong> Score: '+score + (d ? ' (Daily x2 XP)' : '') + '</p>';
+      }
+    }, 1000);
+  }
+</script></body></html>

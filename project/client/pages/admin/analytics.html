@@ -1,0 +1,98 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Analytics • MathQuest</title><link rel="stylesheet" href="../../assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<header><div class="navbar container"><div class="brand">MATHQUEST</div><nav class="navlinks"><a href="../../index.html">Home</a></nav></div></header>
+<main class="container">
+  <div class="card"><h2 class="h2">What’s New Clicks</h2>
+    <div class="row" style="margin-bottom:12px;align-items:center;gap:8px;">
+      <label for="range" class="small">Time Range:</label>
+      <select id="range" class="input" style="max-width:120px;">
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="90">90 days</option>
+      </select>
+    </div>
+    <div class="row"><canvas id="chart-features" width="640" height="280"></canvas><canvas id="chart-roles" width="360" height="280"></canvas></div>
+    <p class="small">Click counts by feature and by role.</p>
+  </div>
+  <div class="card"><h2 class="h2">Raw Events</h2><pre id="raw" style="white-space:pre-wrap;background:#0e1932;border:1px solid #1b2a4a;border-radius:8px;padding:10px;max-height:260px;overflow:auto"></pre></div>
+</main>
+<script type="module">
+ import {api} from '../../assets/js/runtime.js';
+function bar(ctx, labels, values, title = '') {
+    const c = ctx.getContext('2d');
+    const w = ctx.width;
+    const h = ctx.height;
+    const pad = 40;
+    // Clear canvas
+    c.clearRect(0, 0, w, h);
+    // Determine max value for scaling
+    const max = Math.max(1, ...values);
+    // Draw axes
+    c.strokeStyle = '#1b2a4a';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(pad, pad);
+    c.lineTo(pad, h - pad);
+    c.lineTo(w - pad, h - pad);
+    c.stroke();
+    // Y-axis ticks and labels
+    c.fillStyle = '#eef2ff';
+    c.font = '10px Nunito, sans-serif';
+    const ticks = 5;
+    for (let i = 0; i <= ticks; i++) {
+      const val = Math.round(max * i / ticks);
+      const y = h - pad - (h - 2 * pad) * i / ticks;
+      c.fillText(String(val), 4, y + 3);
+      c.beginPath();
+      c.moveTo(pad - 4, y);
+      c.lineTo(pad, y);
+      c.stroke();
+    }
+    // Draw bars
+    const gap = (w - 2 * pad) / values.length;
+    const barWidth = gap * 0.7;
+    for (let i = 0; i < values.length; i++) {
+      const x = pad + i * gap + gap * 0.15;
+      const barHeight = (h - 2 * pad) * values[i] / max;
+      const y = h - pad - barHeight;
+      // Bar fill
+      c.fillStyle = '#5ee7ff';
+      c.fillRect(x, y, barWidth, barHeight);
+      // Bar value label above
+      c.fillStyle = '#eef2ff';
+      c.font = '11px Nunito, sans-serif';
+      c.fillText(String(values[i]), x, y - 4);
+      // X-axis label rotated
+      c.save();
+      c.translate(x + barWidth / 2, h - pad + 14);
+      c.rotate(-Math.PI / 4);
+      c.fillText(labels[i], 0, 0);
+      c.restore();
+    }
+    // Draw title
+    c.fillStyle = '#eef2ff';
+    c.font = '14px Nunito, sans-serif';
+    c.fillText(title, pad, 20);
+  }
+ async function load(days=30){
+    // Fetch analytics summary with optional time range (days)
+    let url = '/analytics/summary';
+    if(days) url += '?days=' + days;
+    const s = await api(url);
+    const features = Object.entries(s.byFeature).sort((a,b) => b[1] - a[1]);
+    const roles = Object.entries(s.byRole).sort((a,b) => b[1] - a[1]);
+    bar(document.getElementById('chart-features'), features.map(x => x[0]), features.map(x => x[1]), 'By Feature');
+    bar(document.getElementById('chart-roles'), roles.map(x => x[0]), roles.map(x => x[1]), 'By Role');
+    document.getElementById('raw').textContent = JSON.stringify(s.events.slice(-200), null, 2);
+  }
+  // Hook range selector to reload charts
+  const rangeSel = document.getElementById('range');
+  if(rangeSel){
+    rangeSel.addEventListener('change', () => {
+      const days = parseInt(rangeSel.value, 10);
+      load(days);
+    });
+  }
+  // initial load
+  load(parseInt(document.getElementById('range')?.value || '30', 10));
+</script></body></html>

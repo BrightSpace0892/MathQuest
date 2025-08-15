@@ -1,0 +1,130 @@
+generator client { provider="prisma-client-js" }
+datasource db { provider="sqlite"; url=env("DATABASE_URL") }
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  email       String?
+  tier        String   @default("Free")
+  gems        Int      @default(0)
+  skin        String   @default("default")
+  birthYear   Int?
+  hasConsent  Boolean  @default(false)
+  parentEmail String?
+  displayName String?
+  createdAt   DateTime @default(now())
+  results     Result[]
+  groupMembers GroupMember[]
+  adRewards   AdReward[]
+  inventory   Inventory[]
+}
+
+model Result {
+  id        String   @id @default(cuid())
+  gameId    String
+  score     Int
+  xpGain    Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  members   GroupMember[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  group     Group    @relation(fields: [groupId], references: [id])
+  groupId   String
+  createdAt DateTime @default(now())
+  @@unique([userId, groupId])
+}
+
+model AdReward {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  date   String
+  count  Int    @default(0)
+  @@unique([userId, date])
+}
+
+model Cosmetic {
+  id       String @id @default(cuid())
+  title    String
+  type     String   // 'skin' | 'gear'
+  champion String?
+}
+
+model Inventory {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  cosmetic   Cosmetic @relation(fields: [cosmeticId], references: [id])
+  cosmeticId String
+  createdAt  DateTime @default(now())
+  @@unique([userId, cosmeticId])
+}
+
+model Event {
+  id     String @id @default(cuid())
+  title  String
+  banner String
+  start  String
+  end    String
+}
+
+model MissionProgress {
+  id        String @id @default(cuid())
+  username  String
+  missionId String
+  progress  Int    @default(0)
+  goal      Int
+  track     String // Free | Premium
+}
+
+model ConsentToken {
+  id        String   @id @default(cuid())
+  username  String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+}
+
+model ConsentLog {
+  id        String   @id @default(cuid())
+  username  String
+  action    String
+  meta      String?
+  createdAt DateTime @default(now())
+}
+
+model DataRequest {
+  id        String   @id @default(cuid())
+  username  String
+  type      String   // export | rectification | deletion
+  status    String   @default("open")
+  payload   String?
+  createdAt DateTime @default(now())
+}
+
+model CookieConsent {
+  id        String   @id @default(cuid())
+  analytics Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  username  String
+  role      String
+  featureId String
+  createdAt DateTime @default(now())
+}

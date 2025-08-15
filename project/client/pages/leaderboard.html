@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaderboards • MathQuest</title><link rel="stylesheet" href="../assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<main class="container"><div class="card"><h2 class="h2">Global Top</h2><div id="lb">Loading…</div></div></main>
+<script type="module">
+  import {api} from '../assets/js/runtime.js';
+  (async()=>{
+    const res = await api('/leaderboard/top');
+    const lb = document.getElementById('lb');
+    lb.innerHTML = res.list.map((x,i) => {
+      let medal = '';
+      if(i === 0) medal = '<span class="medal gold">🥇</span>';
+      else if(i === 1) medal = '<span class="medal silver">🥈</span>';
+      else if(i === 2) medal = '<span class="medal bronze">🥉</span>';
+      const rowClass = i < 3 ? 'row leader-row top3' : 'row leader-row';
+      return `<div class="${rowClass}" style="align-items:center;gap:8px;">${medal}<span class="badge">#${i+1}</span><strong>${x.displayName}</strong> <span class="small">${x.xp} XP</span></div>`;
+    }).join('');
+  })();
+</script></body></html>

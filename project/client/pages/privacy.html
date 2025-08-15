@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Center • MathQuest</title><link rel="stylesheet" href="../assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<main class="container"><div class="card"><h2 class="h2">Privacy Center</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+<div class="card"><h3 class="h3">Export</h3><button class="btn" id="exp">Export JSON</button></div>
+<div class="card"><h3 class="h3">Delete</h3><button class="btn g" id="del">Delete Account</button></div>
+</div></div></main>
+<script type="module">
+ import {api} from '../assets/js/runtime.js'; const U=localStorage.getItem('mq.user')||'admin';
+ document.getElementById('exp').onclick=async()=>{const d=await api('/privacy/export?username='+U); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'})); a.download='export_'+U+'.json'; a.click();};
+ document.getElementById('del').onclick=async()=>{ if(!confirm('Sure?'))return; await api('/privacy/delete',{method:'POST',body:JSON.stringify({username:U})}); alert('Deleted (demo immediate)'); };
+</script></body></html>

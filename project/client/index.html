@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MathQuest v4.2 • All‑Up Safe</title><link rel="stylesheet" href="assets/css/design.css"><script>window.MQ_API_BASE='http://localhost:8788';</script></head><body>
+<header>
+  <div class="navbar container">
+    <div class="brand">MathQuest</div>
+    <!-- Champion avatar acts as trigger to open selector -->
+    <div class="champion-avatar" id="open-champion" title="Choose your champion"></div>
+    <div class="hamburger" id="hamburger" aria-label="Open navigation menu" role="button" tabindex="0">
+      <span></span><span></span><span></span>
+    </div>
+    <nav class="navlinks">
+      <a class="active" href="index.html">Home</a>
+      <a href="games.html">Games</a>
+      <a href="pages/missions.html">Missions</a>
+      <a href="pages/leaderboard.html">Leaderboard</a>
+      <a href="pages/groups/board.html">Groups</a>
+      <a href="pages/teacher/wizard.html">Teacher Wizard</a>
+      <a href="pages/admin/analytics.html">Admin Analytics</a>
+      <a href="pages/privacy.html">Privacy</a>
+      <a href="pages/consent.html">Consent</a>
+    </nav>
+  </div>
+</header>
+<!-- Mobile drawer with duplicated links for accessibility -->
+<div class="drawer" id="mobile-drawer" aria-label="Mobile navigation menu">
+  <a href="index.html">Home</a>
+  <a href="games.html">Games</a>
+  <a href="pages/missions.html">Missions</a>
+  <a href="pages/leaderboard.html">Leaderboard</a>
+  <a href="pages/groups/board.html">Groups</a>
+  <a href="pages/teacher/wizard.html">Teacher Wizard</a>
+  <a href="pages/admin/analytics.html">Admin Analytics</a>
+  <a href="pages/privacy.html">Privacy</a>
+  <a href="pages/consent.html">Consent</a>
+</div>
+<main class="container">
+  <!-- Hero banner with parallax layers -->
+  <div class="card hero">
+    <div class="layer stars"></div>
+    <div class="layer clouds"></div>
+    <h1 class="h1">Embark on your MathQuest!</h1>
+    <p class="small">Explore islands, earn gems and master new skills.</p>
+  </div>
+  <!-- Event banner remains visible as a promotion placeholder -->
+  <img class="imgfull" src="assets/img/banner_winter.png" alt="Event banner">
+  <!-- Adventure map with islands -->
+  <section class="map">
+    <div class="progress-path"></div>
+    <div class="row" style="justify-content:space-around;flex-wrap:nowrap;overflow-x:auto;gap:40px;">
+      <a href="pages/games/quickfire.html" class="island" aria-label="Quickfire game island" title="Practice fluency">
+        <span class="label">Quickfire</span>
+      </a>
+      <a href="pages/games/memory.html" class="island" aria-label="Memory game island" title="Train your memory">
+        <span class="label">Memory</span>
+      </a>
+      <a href="pages/games/bingo.html" class="island" aria-label="Bingo game island" title="Test your strategy">
+        <span class="label">Bingo</span>
+      </a>
+      <a href="pages/games/fractions.html" class="island" aria-label="Fractions game island" title="Learn fractions">
+        <span class="label">Fractions</span>
+      </a>
+      <a href="pages/games/numberline.html" class="island" aria-label="Number line game island" title="Number sense">
+        <span class="label">Number Line</span>
+      </a>
+    </div>
+  </section>
+  <!-- Demo buttons remain for guided tours -->
+  <div class="row" style="margin-top:24px;justify-content:center;"><button class="btn" id="btn-demo-teacher">Start Teacher Demo</button><button class="btn a" id="btn-demo-parent">Start Parent Tour</button></div>
+</main>
+<footer>© 2025 MathQuest • <a href="#" id="link-wn">What’s New</a></footer>
+<div class="modal" id="whatsnew"><div class="sheet"></div></div>
+<!-- Champion selector modal -->
+<div class="modal" id="champion-modal" aria-hidden="true">
+  <div class="sheet">
+    <h2 class="h2">Choose Your Champion</h2>
+    <p class="small">Select a champion to represent you on your adventure.</p>
+    <div class="grid champion-grid" style="grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:16px; margin-top:12px;"></div>
+    <div style="text-align:right;margin-top:16px;">
+      <button class="btn g" id="close-champion">Close</button>
+    </div>
+  </div>
+</div>
+<!-- Confetti canvas and toast notification container -->
+<canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+<div id="toast" class="toast" role="alert" aria-live="polite"></div>
+<script type="module">
+  import {startDemo} from './assets/js/demo_guides.js';
+  import {mountWhatsNew} from './assets/js/whatsnew.js';
+  import {confetti, showToast, initChampionSelector, initNav} from './assets/js/runtime.js';
+  // Demo buttons
+  document.getElementById('btn-demo-teacher').onclick = () => startDemo('teacher');
+  document.getElementById('btn-demo-parent').onclick = () => startDemo('parent');
+  // What’s new modal
+  document.getElementById('link-wn').onclick = (e) => {
+    e.preventDefault();
+    document.getElementById('whatsnew').style.display = 'grid';
+  };
+  // Mount what’s new if needed
+  mountWhatsNew(false);
+  // Initialize champion selector and nav toggles
+  initChampionSelector();
+  initNav();
+</script>
+<script type="module" src="assets/js/runtime.js"></script>
+<script type="module" src="assets/js/whatsnew.js"></script>
+<script type="module" src="assets/js/demo_guides.js"></script>
+</body></html>
